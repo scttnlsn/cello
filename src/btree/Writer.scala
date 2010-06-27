@@ -6,10 +6,10 @@ class Writer()(implicit val pager: Pager) {
 
   val lock: AnyRef = new Object()
 
-  def save(root: Root): Long = {
+  def save(root: Swappable): Long = {
     lock.synchronized {
       val snapshot = Snapshot()
-      Footer(snapshot.version + 1, root.save()).save()
+      Footer(snapshot.version + 1, root.dump()).save()
     }
   }
 

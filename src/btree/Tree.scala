@@ -4,15 +4,16 @@ case class Tree(val path: String) {
 
   implicit val pager = Pager(path)
 
-  private var snapshot = Snapshot()
-  private var root = Root(snapshot.root)
+  private var root = Snapshot().root
 
   def delete(key: String): Unit = {
-    root.delete(key)
+    val node = root.load()
+    node.delete(key)
+    root = ~node
   }
 
   def get(key: String): Option[String] = {
-    root.get(key)
+    root.load().get(key)
   }
 
   def save(): Long = {
@@ -20,12 +21,18 @@ case class Tree(val path: String) {
   }
 
   def set(key: String, value: String): Unit = {
-    root.set(key, value)
+    val node = root.load()
+    node.set(key, value)
+    if (node.full) {
+      val (pivot, left, right) = node.split
+      root = ~InnerNode(pivot, left, right)
+    } else {
+      root = ~node
+    }
   }
 
   def sync(): Unit = {
-    snapshot = Snapshot()
-    root = Root(snapshot.root)
+    root = Snapshot().root
   }
 
 }
