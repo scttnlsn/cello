@@ -10,6 +10,10 @@ case class Root(
     root = ~node
   }
 
+  def get(key: String): Option[String] = {
+    root.load().get(key)
+  }
+
   def save(): Long = {
     root.dump()
   }

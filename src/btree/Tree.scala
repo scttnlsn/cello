@@ -4,24 +4,28 @@ case class Tree(val path: String) {
 
   implicit val pager = Pager(path)
 
-  def delete(key: String): Long = {
-    Writer().delete(key)
+  private var snapshot = Snapshot()
+  private var root = Root(snapshot.root)
+
+  def delete(key: String): Unit = {
+    root.delete(key)
   }
 
-  def delete(keys: Seq[String]): Long = {
-    Writer().delete(keys)
+  def get(key: String): Option[String] = {
+    root.get(key)
   }
 
-  def set(key: String, value: String): Long = {
-    Writer().set(key, value)
+  def save(): Long = {
+    Writer().save(root)
   }
 
-  def set(kvs: Seq[(String, String)]): Long = {
-    Writer().set(kvs)
+  def set(key: String, value: String): Unit = {
+    root.set(key, value)
   }
 
-  def snapshot(): Snapshot = {
-    Snapshot()
+  def sync(): Unit = {
+    snapshot = Snapshot()
+    root = Root(snapshot.root)
   }
 
 }
