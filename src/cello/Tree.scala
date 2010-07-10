@@ -1,4 +1,4 @@
-package btree
+package cello
 
 case class Tree(val path: String) {
 

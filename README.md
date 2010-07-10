@@ -1,8 +1,8 @@
-scala-btree
-===========
+cello
+=====
 
-An append-only B+ tree with multiversion concurrency control (MVCC).  It
-features lockless reads and serialized writes of string-based key/value
+Cello is an append-only B+ tree with multiversion concurrency control (MVCC).
+It features lockless reads and serialized writes of string-based key/value
 pairs.
 
 API
@@ -10,7 +10,7 @@ API
 
 Basic usage:
 
-    import btree.Tree
+    import cello.Tree
 
     val tree = Tree("/path/to/tree")
 
