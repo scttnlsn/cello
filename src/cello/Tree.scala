@@ -6,6 +6,10 @@ case class Tree(val path: String) {
 
   private var root = Snapshot().root
 
+  def compact(): Long = {
+    Compactor().compact(root)
+  }
+
   def delete(key: String): Unit = {
     val node = root.load()
     node.delete(key)
