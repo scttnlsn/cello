@@ -32,3 +32,8 @@ Other clients can then pick up these changes by synchronizing with the tree
 on disk (be aware that this effectively discards all in-memory changes).
 
     tree.sync()
+
+Since all changes to the tree (even deletes) result in data being appended to
+the end of the file, occasional compaction is necessary to reduce file size.
+
+    tree.compact()
