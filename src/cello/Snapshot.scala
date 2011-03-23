@@ -11,6 +11,7 @@ class Snapshot(val version: Long, val root: Swappable) {
 object Snapshot {
 
   def apply()(implicit pager: Pager): Snapshot = {
+    pager.reinitialize()
     Footer.search(pager.pages() - 1) match {
       case None => new Snapshot(1, ~LeafNode())
       case Some(x) => new Snapshot(x.version, Paged(x.rootPage))

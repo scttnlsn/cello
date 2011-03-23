@@ -7,7 +7,9 @@ case class Tree(val path: String) {
   private var root = Snapshot().root
 
   def compact(): Long = {
-    Compactor().compact(root)
+    val page = Compactor().compact(root)
+    sync()
+    page
   }
 
   def delete(key: String): Unit = {

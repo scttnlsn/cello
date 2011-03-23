@@ -1,5 +1,6 @@
 package cello
 
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
@@ -7,8 +8,21 @@ import java.nio.channels.FileChannel.MapMode
 
 class Pager(val path: String) {
 
-  val writer = new FileOutputStream(path, true)
-  val reader = new FileInputStream(path).getChannel()
+  var writer = new FileOutputStream(path, true)
+  var reader = new FileInputStream(path).getChannel()
+  
+  def reinitialize(): Unit = {
+    writer.close()
+    reader.close()
+    writer = new FileOutputStream(path, true)
+    reader = new FileInputStream(path).getChannel()
+  }
+  
+  def replace(newPath: String): Unit = {
+    new File(path).delete()
+    new File(newPath).renameTo(new File(path))
+    reinitialize();
+  }
 
   def append(buffer: ByteBuffer): Long = {
     synchronized {
