@@ -10,7 +10,7 @@ API
 
 Basic usage:
 
-    import cello.Tree
+    import com.scttnlsn.cello.Tree
 
     val tree = Tree("/path/to/tree")
 

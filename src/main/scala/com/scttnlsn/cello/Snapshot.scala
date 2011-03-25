@@ -1,4 +1,4 @@
-package cello
+package com.scttnlsn.cello
 
 class Snapshot(val version: Long, val root: Swappable) {
 

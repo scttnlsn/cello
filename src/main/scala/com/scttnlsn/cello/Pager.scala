@@ -1,4 +1,4 @@
-package cello
+package com.scttnlsn.cello
 
 import java.io.File
 import java.io.FileInputStream

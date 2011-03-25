@@ -1,4 +1,4 @@
-package cello
+package com.scttnlsn.cello
 
 case class Tree(val path: String) {
 

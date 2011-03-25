@@ -1,4 +1,4 @@
-package cello
+package com.scttnlsn.cello
 
 case class Compactor()(implicit val pager: Pager) {
 

@@ -1,4 +1,4 @@
-package cello
+package com.scttnlsn.cello
 
 import java.nio.ByteBuffer
 import scala.collection.mutable.ListBuffer

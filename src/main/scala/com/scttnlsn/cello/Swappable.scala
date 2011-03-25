@@ -1,4 +1,4 @@
-package cello
+package com.scttnlsn.cello
 
 import java.nio.ByteBuffer
 
