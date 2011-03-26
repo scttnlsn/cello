@@ -1,97 +1,92 @@
 package com.scttnlsn.cello
 
 import java.nio.ByteBuffer
-import scala.collection.mutable.ListBuffer
+import scala.collection.SortedMap
+import scala.collection.immutable.TreeMap
 
-class LeafNode(
-  val keys: ListBuffer[String],
-  val values: ListBuffer[String])(
-  implicit val pager: Pager) extends Node {
-
-  def delete(key: String):Unit = {
-    where(key) match {
-      case None => ()
-      case Some(i) => {
-        if (key == keys(i)) {
-          keys.remove(i)
-          values.remove(i)
-        }
-      }
-    }
+class LeafNode(var map: SortedMap[String, String])(implicit val pager: Pager) extends Node {
+  
+  /**
+   * Get the value for the given key.
+   */
+  def get(key: String): Option[String] = {
+    map.get(key)
+  }
+  
+  /**
+   * Set the given key/value pair.
+   */
+  def set(key: String, value: String): Unit = {
+    map += (key -> value)
+  }
+  
+  /**
+   * Delete the pair with the given key.
+   */
+  def delete(key: String): Unit = {
+    map -= key
   }
 
+  /**
+   * Split the node in half, returning the two sides and the pivot key.
+   */
+  def split(): (String, LeafNode, LeafNode) = {
+    val (left, right) = map.splitAt(map.size / 2)
+    (left.keys.last, LeafNode(left), LeafNode(right))
+  }
+  
+  /**
+   * Return true iff the node is full and requires splitting.
+   */
   def full(): Boolean = {
-    var sum = 5
-    keys.foreach(key => sum += key.length + 1)
-    values.foreach(value => sum += value.length + 1)
+    var sum = 5;
+    map.foreach {
+      case (key, value) => {
+        sum += (key.length + value.length + 2)
+      }
+    }
     sum > Pager.PAGESIZE
   }
 
-  def get(key: String): Option[String] = {
-    where(key) match {
-      case None => None
-      case Some(i) => {
-        if (key == keys(i)) {
-          Some(values(i))
-        } else {
-          None
-        }
-      }
-    }
-  }
-
-  def set(key: String, value: String): Unit = {
-    where(key) match {
-      case None => {
-        keys.append(key)
-        values.append(value)
-      }
-      case Some(i) => {
-        if (key == keys(i)) {
-          values.update(i, value)
-        } else {
-          keys.insert(i, key)
-          values.insert(i, value)
-        }
-      }
-    }
-  }
-
-  def split(): (String, LeafNode, LeafNode) = {
-    val m = keys.size / 2
-    val left = LeafNode(keys.take(m), values.take(m))
-    val right = LeafNode(keys.drop(m), values.drop(m))
-    (keys(m - 1), left, right)
-  }
-
+  /**
+   * Pack the node into the given byte buffer.
+   */
   def pack(buffer: ByteBuffer): Unit = {
     buffer.put(Swappable.BYTE_LEAF)
-    buffer.putInt(keys.length)
-    keys.foreach(key => Utils.putString(buffer, key))
-    values.foreach(value => Utils.putString(buffer, value))
+    buffer.putInt(map.size)
+    map.foreach { 
+      case (key, value) => {
+        Utils.putString(buffer, key)
+        Utils.putString(buffer, value)
+      }
+    }
   }
 
 }
 
 object LeafNode {
 
-  def apply(keys: Seq[String], values: Seq[String])(implicit pager: Pager): LeafNode = {
-    val keysBuffer = new ListBuffer[String]()
-    val valuesBuffer = new ListBuffer[String]()
-    keysBuffer.appendAll(keys)
-    valuesBuffer.appendAll(values)
-    new LeafNode(keysBuffer, valuesBuffer)
+  /**
+   * Create a new node from the given map.
+   */
+  def apply(map: SortedMap[String, String])(implicit pager: Pager): LeafNode = {
+    new LeafNode(map)
   }
 
+  /**
+   * Create a new empty node.
+   */
   def apply()(implicit pager: Pager): LeafNode = {
-    LeafNode(List(), List())
+    LeafNode(TreeMap[String, String]())
   }
 
+  /**
+   * Create a new node from the values packed into the given byte buffer.
+   */
   def apply(buffer: ByteBuffer)(implicit pager: Pager): LeafNode = {
     val n = buffer.getInt()
-    val keys = (1 to n).map(_ => Utils.getString(buffer))
-    val values = (1 to n).map(_ => Utils.getString(buffer))
-    LeafNode(keys, values)
+    val pairs = (1 to n).map(_ => (Utils.getString(buffer), Utils.getString(buffer)))
+    LeafNode(TreeMap(pairs:_*))
   }
 
 }

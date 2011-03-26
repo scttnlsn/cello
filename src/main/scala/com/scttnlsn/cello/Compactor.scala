@@ -16,7 +16,7 @@ case class Compactor()(implicit val pager: Pager) {
   private def copy(node: Node): Long = {
     node match {
       case (x: LeafNode) => {
-        (~LeafNode(x.keys, x.values)(compacted)).dump()
+        (~LeafNode(x.map)(compacted)).dump()
       }
       case (x: InnerNode) => {
         val pages = x.children.map(c => Paged(copy(c.load())))
