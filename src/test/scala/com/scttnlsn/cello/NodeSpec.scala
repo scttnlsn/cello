@@ -100,6 +100,7 @@ class NodeSpec extends Spec {
       expect(6) { buffer.getLong() }
       expect("8") { Utils.getString(buffer) }
       expect(8) { buffer.getLong() }
+      expect(10) { buffer.getLong() }
     }
     
   }
