@@ -1,103 +1,122 @@
 package com.scttnlsn.cello
 
 import java.nio.ByteBuffer
-import scala.collection.mutable.ListBuffer
+import scala.collection.SortedMap
+import scala.collection.immutable.TreeMap
 
-class InnerNode(
-  val keys: ListBuffer[String],
-  val children: ListBuffer[Swappable])(
-  implicit val pager: Pager) extends Node {
-
-  def delete(key: String): Unit = {
-    val (i, child) = where(key) match {
-      case None => (children.length - 1, children.last.load())
-      case Some(i) => (i, children(i).load())
+class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(implicit val pager: Pager) extends Node {
+  
+  /**
+   * Find the child node responsible for the given key.
+   */
+  def find(key: String): Swappable = {
+    if (key > map.lastKey) {
+      last
+    } else {
+      map.dropWhile(x => key > x._1).head._2
     }
-    child.delete(key)
-    children.update(i, ~child)
   }
-
-  def full(): Boolean = {
-    var sum = 5 + children.length * 8
-    keys.foreach(key => sum += key.length + 1)
-    sum > Pager.PAGESIZE
-  }
-
+  
+  /**
+   * Get the value for the given key from the corresponding child.
+   */
   def get(key: String): Option[String] = {
-    where(key) match {
-      case None => children.last.load().get(key)
-      case Some(i) => children(i).load().get(key)
-    }
+    find(key).load().get(key)
   }
 
+  /**
+   * Set the given key/value pair in the corresponding child.
+   */
   def set(key: String, value: String): Unit = {
-    val position = where(key)
-    val child = position match {
-      case None => children.last.load()
-      case Some(i) => children(i).load()
-    }
+    val child = find(key).load()
     child.set(key, value)
     if (child.full) {
       val (pivot, left, right) = child.split
-      position match {
-        case None => {
-          keys.append(pivot)
-          children.update(children.length - 1, ~left)
-          children.append(~right)
-        }
-        case Some(i) => {
-          keys.insert(i, pivot)
-          children.insert(i, ~left)
-          children.update(i + 1, ~right)
-        }
+      if (key > map.lastKey) {
+        map += ((pivot, ~left))
+        last = ~right
+      } else {
+        map += ((pivot, ~left), (key, ~right))
       }
     } else {
-      position match {
-        case None => {
-          children.update(children.length - 1, ~child)
-        }
-        case Some(i) => {
-          children.update(i, ~child)
-        }
+      if (key > map.lastKey) {
+        last = ~child
+      } else {
+        map += ((key, ~child))
       }
     }
   }
 
+  /**
+   * Delete the pair with the given key from the corresponding child
+   */
+  def delete(key: String): Unit = {
+    val child = find(key).load()
+    child.delete(key)
+    map += ((key, ~child))
+  }
+  
+  /**
+   * Split the node in half, returning the two sides and the pivot key.
+   */
   def split(): (String, InnerNode, InnerNode) = {
-    val m = keys.size / 2
-    val left = InnerNode(keys.take(m), children.take(m+1))
-    val right = InnerNode(keys.drop(m+1), children.drop(m+1))
-    (keys(m), left, right)
+    val (left, right) = map.splitAt(map.size / 2)
+    (right.head._1, InnerNode(left, right.head._2), InnerNode(right.drop(1), last))
   }
 
+  /**
+   * Return true iff the node is full and requires splitting.
+   */
+  def full(): Boolean = {
+    var sum = 13
+    map.foreach {
+      case (key, value) => {
+        sum += (key.length + 9)
+      }
+    }
+    sum > Pager.PAGESIZE
+  }
+
+  /**
+   * Pack the node into the given byte buffer.
+   */
   def pack(buffer: ByteBuffer): Unit = {
     buffer.put(Swappable.BYTE_INNER)
-    buffer.putInt(keys.length)
-    keys.foreach(key => Utils.putString(buffer, key))
-    children.foreach(child => buffer.putLong(child.dump()))
+    buffer.putInt(map.size)
+    map.foreach { 
+      case (key, child) => {
+        Utils.putString(buffer, key)
+        buffer.putLong(child.dump())
+      }
+    }
+    buffer.putLong(last.dump())
   }
 
 }
 
 object InnerNode {
 
-  def apply(keys: Seq[String], children: Seq[Swappable])(implicit pager: Pager): InnerNode = {
-    val keysBuffer = new ListBuffer[String]()
-    val childrenBuffer = new ListBuffer[Swappable]()
-    keysBuffer.appendAll(keys)
-    childrenBuffer.appendAll(children)
-    new InnerNode(keysBuffer, childrenBuffer)
+  /**
+   * Create a new node from the given keys/children.
+   */
+  def apply(map: SortedMap[String, Swappable], last: Swappable)(implicit pager: Pager): InnerNode = {
+    new InnerNode(map, last)
   }
 
+  /**
+   * Create a new node with the given left and right children.
+   */
   def apply(key: String, left: Node, right: Node)(implicit pager: Pager): InnerNode = {
-    InnerNode(List(key), List(~left, ~right))
+    InnerNode(TreeMap(key -> ~left), ~right)
   }
 
+  /**
+   * Create a new node from the values packed into the given byte buffer.
+   */
   def apply(buffer: ByteBuffer)(implicit pager: Pager): InnerNode = {
     val n = buffer.getInt()
-    val keys = (1 to n).map(_ => Utils.getString(buffer))
-    val children = (1 to n + 1).map(_ => Paged(buffer.getLong()))
-    InnerNode(keys, children)
+    val pairs = (1 to n).map(_ => (Utils.getString(buffer), Paged(buffer.getLong())))
+    InnerNode(TreeMap(pairs:_*), Paged(buffer.getLong()))
   }
 
 }

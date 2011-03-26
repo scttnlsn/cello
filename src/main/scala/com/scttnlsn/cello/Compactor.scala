@@ -19,8 +19,9 @@ case class Compactor()(implicit val pager: Pager) {
         (~LeafNode(x.map)(compacted)).dump()
       }
       case (x: InnerNode) => {
-        val pages = x.children.map(c => Paged(copy(c.load())))
-        (~InnerNode(x.keys, pages)(compacted)).dump()
+        val map = x.map.map(y => (y._1, Paged(copy(y._2.load()))))
+        val last = Paged(copy(x.last.load()))
+        (~InnerNode(map, last)(compacted)).dump()
       }
     }
   }
