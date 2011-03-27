@@ -34,16 +34,16 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
     if (child.full) {
       val (pivot, left, right) = child.split
       if (key > map.lastKey) {
-        map += ((pivot, ~left))
+        map += (pivot -> ~left)
         last = ~right
       } else {
-        map += ((pivot, ~left), (k, ~right))
+        map += (pivot -> ~left, k -> ~right)
       }
     } else {
       if (key > map.lastKey) {
         last = ~child
       } else {
-        map += ((k, ~child))
+        map += (k -> ~child)
       }
     }
   }
@@ -55,7 +55,7 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
     val (k, swappable) = find(key)
     val child = swappable.load()
     child.delete(key)
-    map += ((k, ~child))
+    map += (k -> ~child)
   }
   
   /**
