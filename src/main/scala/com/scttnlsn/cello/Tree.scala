@@ -6,26 +6,10 @@ case class Tree(val path: String) {
 
   private var root = Snapshot().root
 
-  def compact(): Long = {
-    val page = Compactor().compact(root)
-    sync()
-    page
-  }
-
-  def delete(key: String): Unit = {
-    val node = root.load()
-    node.delete(key)
-    root = ~node
-  }
-
   def get(key: String): Option[String] = {
     root.load().get(key)
   }
-
-  def save(): Long = {
-    Writer().save(root)
-  }
-
+  
   def set(key: String, value: String): Unit = {
     val node = root.load()
     node.set(key, value)
@@ -36,9 +20,27 @@ case class Tree(val path: String) {
       root = ~node
     }
   }
+  
+  def delete(key: String): Unit = {
+    val node = root.load()
+    node.delete(key)
+    root = ~node
+  }
+
+  def save(): Long = {
+    Writer() !? Save(root) match {
+      case page: Long => page
+    }
+  }
 
   def sync(): Unit = {
     root = Snapshot().root
+  }
+  
+  def compact(): Long = {
+    Writer() !? Compact(root) match {
+      case page: Long => page
+    }
   }
 
 }
