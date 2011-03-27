@@ -62,15 +62,15 @@ class NodeSpec extends Spec {
     it("find") {
       val map = (2 to 8).filter(n => n % 2 == 0)map(n => (n.toString, Paged(n)))
       val node = InnerNode(TreeMap(map:_*), Paged(10))
-      expect(Paged(2)) { node.find("1") }
-      expect(Paged(2)) { node.find("2") }
-      expect(Paged(4)) { node.find("3") }
-      expect(Paged(4)) { node.find("4") }
-      expect(Paged(6)) { node.find("5") }
-      expect(Paged(6)) { node.find("6") }
-      expect(Paged(8)) { node.find("7") }
-      expect(Paged(8)) { node.find("8") }
-      expect(Paged(10)) { node.find("9") }
+      expect(("2", Paged(2))) { node.find("1") }
+      expect(("2", Paged(2))) { node.find("2") }
+      expect(("4", Paged(4))) { node.find("3") }
+      expect(("4", Paged(4))) { node.find("4") }
+      expect(("6", Paged(6))) { node.find("5") }
+      expect(("6", Paged(6))) { node.find("6") }
+      expect(("8", Paged(8))) { node.find("7") }
+      expect(("8", Paged(8))) { node.find("8") }
+      expect(("", Paged(10))) { node.find("9") }
     }
     
     it("split") {

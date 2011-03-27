@@ -9,11 +9,11 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
   /**
    * Find the child node responsible for the given key.
    */
-  def find(key: String): Swappable = {
+  def find(key: String): (String, Swappable) = {
     if (key > map.lastKey) {
-      last
+      ("", last)
     } else {
-      map.dropWhile(x => key > x._1).head._2
+      map.dropWhile(x => key > x._1).head
     }
   }
   
@@ -21,14 +21,15 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
    * Get the value for the given key from the corresponding child.
    */
   def get(key: String): Option[String] = {
-    find(key).load().get(key)
+    find(key)._2.load().get(key)
   }
 
   /**
    * Set the given key/value pair in the corresponding child.
    */
   def set(key: String, value: String): Unit = {
-    val child = find(key).load()
+    val (k, swappable) = find(key)
+    val child = swappable.load()
     child.set(key, value)
     if (child.full) {
       val (pivot, left, right) = child.split
@@ -36,13 +37,13 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
         map += ((pivot, ~left))
         last = ~right
       } else {
-        map += ((pivot, ~left), (key, ~right))
+        map += ((pivot, ~left), (k, ~right))
       }
     } else {
       if (key > map.lastKey) {
         last = ~child
       } else {
-        map += ((key, ~child))
+        map += ((k, ~child))
       }
     }
   }
@@ -51,9 +52,10 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
    * Delete the pair with the given key from the corresponding child
    */
   def delete(key: String): Unit = {
-    val child = find(key).load()
+    val (k, swappable) = find(key)
+    val child = swappable.load()
     child.delete(key)
-    map += ((key, ~child))
+    map += ((k, ~child))
   }
   
   /**
@@ -61,7 +63,7 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
    */
   def split(): (String, InnerNode, InnerNode) = {
     val (left, right) = map.splitAt(map.size / 2)
-    (right.head._1, InnerNode(left, right.head._2), InnerNode(right.drop(1), last))
+    (right.head._1, InnerNode(left, right.head._2), InnerNode(right.tail, last))
   }
 
   /**
