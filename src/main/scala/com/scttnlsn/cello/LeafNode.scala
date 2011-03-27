@@ -32,7 +32,7 @@ class LeafNode(var map: SortedMap[String, String])(implicit val pager: Pager) ex
    */
   def split(): (String, LeafNode, LeafNode) = {
     val (left, right) = map.splitAt(map.size / 2)
-    (left.keys.last, LeafNode(left), LeafNode(right))
+    (left.lastKey, LeafNode(left), LeafNode(right))
   }
   
   /**
