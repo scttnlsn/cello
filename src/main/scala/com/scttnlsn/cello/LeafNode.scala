@@ -1,5 +1,6 @@
 package com.scttnlsn.cello
 
+import com.scttnlsn.cello.Binary._
 import java.nio.ByteBuffer
 import scala.collection.SortedMap
 import scala.collection.immutable.TreeMap
@@ -39,11 +40,9 @@ class LeafNode(var map: SortedMap[String, String])(implicit val pager: Pager) ex
    * Return true iff the node is full and requires splitting.
    */
   def full(): Boolean = {
-    var sum = 5;
-    map.foreach {
-      case (key, value) => {
-        sum += (key.length + value.length + 2)
-      }
+    var sum = size[Byte](0) + size[Int](0);
+    for ((k, v) <- map) {
+      sum += size[String](k) + size[String](v)
     }
     sum > Pager.PAGESIZE
   }
@@ -52,13 +51,11 @@ class LeafNode(var map: SortedMap[String, String])(implicit val pager: Pager) ex
    * Pack the node into the given byte buffer.
    */
   def pack(buffer: ByteBuffer): Unit = {
-    buffer.put(Swappable.BYTE_LEAF)
-    buffer.putInt(map.size)
-    map.foreach { 
-      case (key, value) => {
-        Utils.putString(buffer, key)
-        Utils.putString(buffer, value)
-      }
+    dump[Byte](buffer, Swappable.BYTE_LEAF)
+    dump[Int](buffer, map.size)
+    for ((k, v) <- map) {
+      dump[String](buffer, k)
+      dump[String](buffer, v)
     }
   }
 

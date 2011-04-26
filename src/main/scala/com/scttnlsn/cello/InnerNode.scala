@@ -1,5 +1,6 @@
 package com.scttnlsn.cello
 
+import com.scttnlsn.cello.Binary._
 import java.nio.ByteBuffer
 import scala.collection.SortedMap
 import scala.collection.immutable.TreeMap
@@ -70,11 +71,9 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
    * Return true iff the node is full and requires splitting.
    */
   def full(): Boolean = {
-    var sum = 13
-    map.foreach {
-      case (key, value) => {
-        sum += (key.length + 9)
-      }
+    var sum = size[Byte](0) + size[Int](0) + size[Long](0)
+    for ((k, v) <- map) {
+      sum += size[String](k) + size[Long](0)
     }
     sum > Pager.PAGESIZE
   }
@@ -83,15 +82,13 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
    * Pack the node into the given byte buffer.
    */
   def pack(buffer: ByteBuffer): Unit = {
-    buffer.put(Swappable.BYTE_INNER)
-    buffer.putInt(map.size)
-    map.foreach { 
-      case (key, child) => {
-        Utils.putString(buffer, key)
-        buffer.putLong(child.dump())
-      }
+    dump[Byte](buffer, Swappable.BYTE_INNER)
+    dump[Int](buffer, map.size)
+    for ((k, v) <- map) {
+      dump[String](buffer, k)
+      dump[Long](buffer, v.dump())
     }
-    buffer.putLong(last.dump())
+    dump[Long](buffer, last.dump())
   }
 
 }
