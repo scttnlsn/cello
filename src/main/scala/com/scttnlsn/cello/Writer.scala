@@ -1,11 +1,12 @@
 package com.scttnlsn.cello
 
+import com.scttnlsn.cello.Binary._
 import scala.actors._
 import scala.collection.mutable.HashMap
 
-case class Save(root: Swappable)
+case class Save(root: Swappable[String, String])
 
-case class Compact(root: Swappable)
+case class Compact(root: Swappable[String, String])
 
 class Writer()(implicit val pager: Pager) extends Actor {
   
@@ -27,15 +28,15 @@ class Writer()(implicit val pager: Pager) extends Actor {
     }
   }
   
-  private def copy(node: Node, compacted: Pager): Long = {
+  private def copy(node: Node[String, String], compacted: Pager): Long = {
     node match {
-      case (x: LeafNode) => {
-        (~LeafNode(x.map)(compacted)).dump()
+      case (x: LeafNode[String, String]) => {
+        (~LeafNode(x.map)(compacted, implicitly[Ordering[String]], StringFormat, StringFormat)).dump()
       }
-      case (x: InnerNode) => {
-        val map = x.map.map(y => (y._1, Paged(copy(y._2.load(), compacted))))
-        val last = Paged(copy(x.last.load(), compacted))
-        (~InnerNode(map, last)(compacted)).dump()
+      case (x: InnerNode[String, String]) => {
+        val map = x.map.map(y => (y._1, Paged[String, String](copy(y._2.load(), compacted))))
+        val last = Paged[String, String](copy(x.last.load(), compacted))
+        (~InnerNode(map, last)(compacted, implicitly[Ordering[String]], StringFormat, StringFormat)).dump()
       }
     }
   }

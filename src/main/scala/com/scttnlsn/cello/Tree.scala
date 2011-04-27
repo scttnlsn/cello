@@ -1,8 +1,12 @@
 package com.scttnlsn.cello
 
+import com.scttnlsn.cello.Binary._
+
 case class Tree(val path: String) {
 
   implicit val pager = Pager(path)
+  
+  implicit val format = StringFormat
 
   private var root = Snapshot().root
 

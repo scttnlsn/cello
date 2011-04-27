@@ -1,24 +1,25 @@
 package com.scttnlsn.cello
 
+import com.scttnlsn.cello.Binary._
 import java.nio.ByteBuffer
 
-abstract sealed class Swappable {
+abstract sealed class Swappable[A, B] {
 
   def dump(): Long
 
-  def load(): Node
+  def load(): Node[A, B]
 
 }
 
-case class Paged(val page: Long)(implicit val pager: Pager) extends Swappable {
+case class Paged[A, B](val page: Long)(implicit val pager: Pager, val ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]) extends Swappable[A, B] {
 
   def dump(): Long = {
     page
   }
 
-  def load(): Node = {
+  def load(): Node[A, B] = {
     val buffer = pager.read(page)
-    buffer.get() match {
+    Binary.load[Byte](buffer) match {
       case Swappable.BYTE_LEAF => LeafNode(buffer)
       case Swappable.BYTE_INNER => InnerNode(buffer)
     }
@@ -26,7 +27,7 @@ case class Paged(val page: Long)(implicit val pager: Pager) extends Swappable {
 
 }
 
-case class Volatile(val node: Node)(implicit val pager: Pager) extends Swappable {
+case class Volatile[A, B](val node: Node[A, B])(implicit val pager: Pager, val ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]) extends Swappable[A, B] {
 
   def dump(): Long = {
     val buffer = ByteBuffer.allocate(Pager.PAGESIZE)
@@ -34,7 +35,7 @@ case class Volatile(val node: Node)(implicit val pager: Pager) extends Swappable
     pager.append(buffer)
   }
 
-  def load(): Node = {
+  def load(): Node[A, B] = {
     node
   }
 

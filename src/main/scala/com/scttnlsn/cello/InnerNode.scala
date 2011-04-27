@@ -5,14 +5,14 @@ import java.nio.ByteBuffer
 import scala.collection.SortedMap
 import scala.collection.immutable.TreeMap
 
-class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(implicit val pager: Pager) extends Node {
+class InnerNode[A, B](var map: SortedMap[A, Swappable[A, B]], var last: Swappable[A, B])(implicit val pager: Pager, val ordering: Ordering[A], val keyFormat: BinaryFormat[A], val valueFormat: BinaryFormat[B]) extends Node[A, B] {
   
   /**
    * Find the child node responsible for the given key.
    */
-  def find(key: String): (String, Swappable) = {
+  def find(key: A): (A, Swappable[A, B]) = {
     if (key > map.lastKey) {
-      ("", last)
+      (null.asInstanceOf[A], last)
     } else {
       map.dropWhile(x => key > x._1).head
     }
@@ -21,14 +21,14 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
   /**
    * Get the value for the given key from the corresponding child.
    */
-  def get(key: String): Option[String] = {
+  def get(key: A): Option[B] = {
     find(key)._2.load().get(key)
   }
 
   /**
    * Set the given key/value pair in the corresponding child.
    */
-  def set(key: String, value: String): Unit = {
+  def set(key: A, value: B): Unit = {
     val (k, swappable) = find(key)
     val child = swappable.load()
     child.set(key, value)
@@ -52,7 +52,7 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
   /**
    * Delete the pair with the given key from the corresponding child
    */
-  def delete(key: String): Unit = {
+  def delete(key: A): Unit = {
     val (k, swappable) = find(key)
     val child = swappable.load()
     child.delete(key)
@@ -62,7 +62,7 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
   /**
    * Split the node in half, returning the two sides and the pivot key.
    */
-  def split(): (String, InnerNode, InnerNode) = {
+  def split(): (A, InnerNode[A, B], InnerNode[A, B]) = {
     val (left, right) = map.splitAt(map.size / 2)
     (right.head._1, InnerNode(left, right.head._2), InnerNode(right.tail, last))
   }
@@ -73,7 +73,7 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
   def full(): Boolean = {
     var sum = size[Byte](0) + size[Int](0) + size[Long](0)
     for ((k, v) <- map) {
-      sum += size[String](k) + size[Long](0)
+      sum += size[A](k) + size[Long](0)
     }
     sum > Pager.PAGESIZE
   }
@@ -85,7 +85,7 @@ class InnerNode(var map: SortedMap[String, Swappable], var last: Swappable)(impl
     dump[Byte](buffer, Swappable.BYTE_INNER)
     dump[Int](buffer, map.size)
     for ((k, v) <- map) {
-      dump[String](buffer, k)
+      dump[A](buffer, k)
       dump[Long](buffer, v.dump())
     }
     dump[Long](buffer, last.dump())
@@ -98,24 +98,24 @@ object InnerNode {
   /**
    * Create a new node from the given keys/children.
    */
-  def apply(map: SortedMap[String, Swappable], last: Swappable)(implicit pager: Pager): InnerNode = {
+  def apply[A, B](map: SortedMap[A, Swappable[A, B]], last: Swappable[A, B])(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): InnerNode[A, B] = {
     new InnerNode(map, last)
   }
 
   /**
    * Create a new node with the given left and right children.
    */
-  def apply(key: String, left: Node, right: Node)(implicit pager: Pager): InnerNode = {
+  def apply[A, B](key: A, left: Node[A, B], right: Node[A, B])(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): InnerNode[A, B] = {
     InnerNode(TreeMap(key -> ~left), ~right)
   }
 
   /**
    * Create a new node from the values packed into the given byte buffer.
    */
-  def apply(buffer: ByteBuffer)(implicit pager: Pager): InnerNode = {
-    val n = buffer.getInt()
-    val pairs = (1 to n).map(_ => (Utils.getString(buffer), Paged(buffer.getLong())))
-    InnerNode(TreeMap(pairs:_*), Paged(buffer.getLong()))
+  def apply[A, B](buffer: ByteBuffer)(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): InnerNode[A, B] = {
+    val n = load[Int](buffer)
+    val pairs = (1 to n).map(_ => (load[A](buffer), Paged[A, B](load[Long](buffer))))
+    InnerNode(TreeMap(pairs:_*), Paged(load[Long](buffer)))
   }
 
 }

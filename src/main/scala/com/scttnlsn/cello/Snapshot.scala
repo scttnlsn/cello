@@ -1,20 +1,18 @@
 package com.scttnlsn.cello
 
-class Snapshot(val version: Long, val root: Swappable) {
+import com.scttnlsn.cello.Binary._
 
-  def get(key: String): Option[String] = {
-    root.load().get(key)
-  }
-
-}
+class Snapshot(val version: Long, val root: Swappable[String, String])
 
 object Snapshot {
+  
+  implicit val format = StringFormat
 
   def apply()(implicit pager: Pager): Snapshot = {
     pager.reinitialize()
     Footer.search(pager.pages() - 1) match {
-      case None => new Snapshot(1, ~LeafNode())
-      case Some(x) => new Snapshot(x.version, Paged(x.rootPage))
+      case None => new Snapshot(1, ~LeafNode[String, String]())
+      case Some(x) => new Snapshot(x.version, Paged[String, String](x.rootPage))
     }
   }
 

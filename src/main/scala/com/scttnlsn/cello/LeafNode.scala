@@ -5,33 +5,33 @@ import java.nio.ByteBuffer
 import scala.collection.SortedMap
 import scala.collection.immutable.TreeMap
 
-class LeafNode(var map: SortedMap[String, String])(implicit val pager: Pager) extends Node {
+class LeafNode[A, B](var map: SortedMap[A, B])(implicit val pager: Pager, val ordering: Ordering[A], val keyFormat: BinaryFormat[A], val valueFormat: BinaryFormat[B]) extends Node[A, B] {
   
   /**
    * Get the value for the given key.
    */
-  def get(key: String): Option[String] = {
+  def get(key: A): Option[B] = {
     map.get(key)
   }
   
   /**
    * Set the given key/value pair.
    */
-  def set(key: String, value: String): Unit = {
+  def set(key: A, value: B): Unit = {
     map += (key -> value)
   }
   
   /**
    * Delete the pair with the given key.
    */
-  def delete(key: String): Unit = {
+  def delete(key: A): Unit = {
     map -= key
   }
 
   /**
    * Split the node in half, returning the two sides and the pivot key.
    */
-  def split(): (String, LeafNode, LeafNode) = {
+  def split(): (A, LeafNode[A, B], LeafNode[A, B]) = {
     val (left, right) = map.splitAt(map.size / 2)
     (left.lastKey, LeafNode(left), LeafNode(right))
   }
@@ -42,7 +42,7 @@ class LeafNode(var map: SortedMap[String, String])(implicit val pager: Pager) ex
   def full(): Boolean = {
     var sum = size[Byte](0) + size[Int](0);
     for ((k, v) <- map) {
-      sum += size[String](k) + size[String](v)
+      sum += size[A](k) + size[B](v)
     }
     sum > Pager.PAGESIZE
   }
@@ -54,8 +54,8 @@ class LeafNode(var map: SortedMap[String, String])(implicit val pager: Pager) ex
     dump[Byte](buffer, Swappable.BYTE_LEAF)
     dump[Int](buffer, map.size)
     for ((k, v) <- map) {
-      dump[String](buffer, k)
-      dump[String](buffer, v)
+      dump[A](buffer, k)
+      dump[B](buffer, v)
     }
   }
 
@@ -66,23 +66,23 @@ object LeafNode {
   /**
    * Create a new node from the given map.
    */
-  def apply(map: SortedMap[String, String])(implicit pager: Pager): LeafNode = {
+  def apply[A, B](map: SortedMap[A, B])(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): LeafNode[A, B] = {
     new LeafNode(map)
   }
 
   /**
    * Create a new empty node.
    */
-  def apply()(implicit pager: Pager): LeafNode = {
-    LeafNode(TreeMap[String, String]())
+  def apply[A, B]()(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): LeafNode[A, B] = {
+    LeafNode(TreeMap[A, B]())
   }
 
   /**
    * Create a new node from the values packed into the given byte buffer.
    */
-  def apply(buffer: ByteBuffer)(implicit pager: Pager): LeafNode = {
-    val n = buffer.getInt()
-    val pairs = (1 to n).map(_ => (Utils.getString(buffer), Utils.getString(buffer)))
+  def apply[A, B](buffer: ByteBuffer)(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): LeafNode[A, B] = {
+    val n = load[Int](buffer)
+    val pairs = (1 to n).map(_ => (load[A](buffer), load[B](buffer)))
     LeafNode(TreeMap(pairs:_*))
   }
 
