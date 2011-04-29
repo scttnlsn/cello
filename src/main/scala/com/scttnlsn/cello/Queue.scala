@@ -7,6 +7,10 @@ case class Set(key: String, value: String)
 
 case class Delete(key: String)
 
+case class BulkSet(map: Map[String, String])
+
+case class BulkDelete(keys: List[String])
+
 class Queue(val pager: Pager) extends Actor {
   
   def act(): Unit = {
@@ -14,6 +18,8 @@ class Queue(val pager: Pager) extends Actor {
       react {
         case Set(key, value) => reply(Writer(pager).set(key, value))
         case Delete(key) => reply(Writer(pager).delete(key))
+        case BulkSet(map) => reply(Writer(pager).set(map))
+        case BulkDelete(keys) => reply(Writer(pager).delete(keys))
       }
     }
   }
