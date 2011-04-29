@@ -1,6 +1,7 @@
-package com.scttnlsn.cello
+package com.scttnlsn.cello.btree
 
 import com.scttnlsn.cello.Binary._
+import com.scttnlsn.cello.Pager
 import java.nio.ByteBuffer
 import scala.collection.SortedMap
 import scala.collection.immutable.TreeMap

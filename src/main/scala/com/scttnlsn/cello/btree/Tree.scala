@@ -1,6 +1,4 @@
-package com.scttnlsn.cello
-
-import com.scttnlsn.cello.Binary._
+package com.scttnlsn.cello.btree
 
 case class Tree[A, B](val page: Option[Long])(implicit val meta: Meta[A, B]) {
 

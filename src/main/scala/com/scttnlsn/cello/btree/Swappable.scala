@@ -1,6 +1,8 @@
-package com.scttnlsn.cello
+package com.scttnlsn.cello.btree
 
+import com.scttnlsn.cello.Binary
 import com.scttnlsn.cello.Binary._
+import com.scttnlsn.cello.Pager
 import java.nio.ByteBuffer
 
 abstract sealed class Swappable[A, B] {

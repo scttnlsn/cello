@@ -1,4 +1,7 @@
-package com.scttnlsn.cello
+package com.scttnlsn.cello.btree
+
+import com.scttnlsn.cello.BinaryFormat
+import com.scttnlsn.cello.Pager
 
 trait Meta[A, B] {
   
