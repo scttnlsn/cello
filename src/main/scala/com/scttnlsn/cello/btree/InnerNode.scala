@@ -57,7 +57,11 @@ class InnerNode[A, B](var map: SortedMap[A, Swappable[A, B]], var last: Swappabl
     val (k, swappable) = find(key)
     val child = swappable.load()
     child.delete(key)
-    map += (k -> ~child)
+    if (key > map.lastKey) {
+      last = ~child
+    } else {
+      map += (k -> ~child)
+    }
   }
   
   /**
