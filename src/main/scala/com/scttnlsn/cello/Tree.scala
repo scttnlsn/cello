@@ -2,19 +2,18 @@ package com.scttnlsn.cello
 
 import com.scttnlsn.cello.Binary._
 
-case class Tree(val path: String) {
+case class Tree[A, B](val page: Option[Long])(implicit val meta: Meta[A, B]) {
 
-  implicit val pager = Pager(path)
-  
-  implicit val format = StringFormat
+  private var root: Swappable[A, B] = page match {
+    case Some(x) => Paged[A, B](x)
+    case None => ~LeafNode[A, B]()
+  }
 
-  private var root = Snapshot().root
-
-  def get(key: String): Option[String] = {
+  def get(key: A): Option[B] = {
     root.load().get(key)
   }
   
-  def set(key: String, value: String): Unit = {
+  def set(key: A, value: B): Unit = {
     val node = root.load()
     node.set(key, value)
     if (node.full) {
@@ -25,26 +24,14 @@ case class Tree(val path: String) {
     }
   }
   
-  def delete(key: String): Unit = {
+  def delete(key: A): Unit = {
     val node = root.load()
     node.delete(key)
     root = ~node
   }
-
-  def save(): Long = {
-    Writer() !? Save(root) match {
-      case page: Long => page
-    }
-  }
-
-  def sync(): Unit = {
-    root = Snapshot().root
-  }
   
-  def compact(): Long = {
-    Writer() !? Compact(root) match {
-      case page: Long => page
-    }
+  def save(): Long = {
+    root.dump
   }
 
 }

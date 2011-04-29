@@ -1,18 +1,13 @@
 package com.scttnlsn.cello
 
+import com.scttnlsn.cello.Binary._
 import java.nio.ByteBuffer
 
-class Footer(
-  val version: Long,
-  val rootPage: Long)(
-  implicit val pager: Pager) {
+class Footer(val version: Long, val page: Long, val pager: Pager) {
 
   def save(): Long = {
     val buffer = ByteBuffer.allocate(Pager.PAGESIZE)
-    buffer.putLong(version)
-    buffer.putLong(rootPage)
-    buffer.putLong(version)
-    buffer.putLong(rootPage)
+    dump[Long](buffer, List(version, page, version, page))
     pager.append(buffer)
   }
 
@@ -20,26 +15,25 @@ class Footer(
 
 object Footer {
 
-  def apply(version: Long, rootPage: Long)(implicit pager: Pager): Footer = {
-    new Footer(version, rootPage)
+  def apply(version: Long, page: Long, pager: Pager): Footer = {
+    new Footer(version, page, pager)
   }
 
-  def get(page: Long)(implicit pager: Pager): Option[Footer] = {
+  def get(page: Long, pager: Pager): Option[Footer] = {
     val buffer = pager.read(page)
-    val version = buffer.getLong()
-    val rootPage = buffer.getLong()
-    if (version == buffer.getLong() && rootPage == buffer.getLong()) {
-      Some(Footer(version, rootPage))
+    val v1::p1::v2::p2::xs = load[Long](buffer, 4)
+    if (v1 == v2 && p1 == p2) {
+      Some(Footer(v1, p1, pager))
     } else {
       None
     }
   }
 
-  def search(page: Long)(implicit pager: Pager): Option[Footer] = {
+  def search(page: Long, pager: Pager): Option[Footer] = {
     page match {
       case -1 => None
-      case x => get(x) match {
-        case None => search(page - 1)
+      case x => get(x, pager) match {
+        case None => search(page - 1, pager)
         case y => y
       }
     }

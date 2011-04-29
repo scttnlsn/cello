@@ -85,9 +85,17 @@ object Binary {
   def dump[T](buffer: ByteBuffer, value: T)(implicit format: BinaryFormat[T]): Unit = {
     format.pack(buffer, value)
   }
+  
+  def dump[T](buffer: ByteBuffer, values: List[T])(implicit format: BinaryFormat[T]): Unit = {
+    values.foreach(value => dump[T](buffer, value))
+  }
 
   def load[T](buffer: ByteBuffer)(implicit format: BinaryFormat[T]): T = {
     format.unpack(buffer)
+  }
+  
+  def load[T](buffer: ByteBuffer, n: Int)(implicit format: BinaryFormat[T]): List[T] = {
+    (1 to n).map(_ => load[T](buffer)).toList
   }
 
   def size[T](value: T)(implicit format: BinaryFormat[T]): Int = {

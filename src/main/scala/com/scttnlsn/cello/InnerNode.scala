@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import scala.collection.SortedMap
 import scala.collection.immutable.TreeMap
 
-class InnerNode[A, B](var map: SortedMap[A, Swappable[A, B]], var last: Swappable[A, B])(implicit val pager: Pager, val ordering: Ordering[A], val keyFormat: BinaryFormat[A], val valueFormat: BinaryFormat[B]) extends Node[A, B] {
+class InnerNode[A, B](var map: SortedMap[A, Swappable[A, B]], var last: Swappable[A, B])(implicit val meta: Meta[A, B]) extends Node[A, B] {
   
   /**
    * Find the child node responsible for the given key.
@@ -98,21 +98,26 @@ object InnerNode {
   /**
    * Create a new node from the given keys/children.
    */
-  def apply[A, B](map: SortedMap[A, Swappable[A, B]], last: Swappable[A, B])(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): InnerNode[A, B] = {
+  def apply[A, B](map: SortedMap[A, Swappable[A, B]], last: Swappable[A, B])(implicit meta: Meta[A, B]): InnerNode[A, B] = {
     new InnerNode(map, last)
   }
 
   /**
    * Create a new node with the given left and right children.
    */
-  def apply[A, B](key: A, left: Node[A, B], right: Node[A, B])(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): InnerNode[A, B] = {
+  def apply[A, B](key: A, left: Node[A, B], right: Node[A, B])(implicit meta: Meta[A, B]): InnerNode[A, B] = {
+    implicit val ordering = meta.ordering
     InnerNode(TreeMap(key -> ~left), ~right)
   }
 
   /**
    * Create a new node from the values packed into the given byte buffer.
    */
-  def apply[A, B](buffer: ByteBuffer)(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): InnerNode[A, B] = {
+  def apply[A, B](buffer: ByteBuffer)(implicit meta: Meta[A, B]): InnerNode[A, B] = {
+    implicit val ordering = meta.ordering
+    implicit val keyFormat = meta.keyFormat
+    implicit val valueFormat = meta.valueFormat
+    
     val n = load[Int](buffer)
     val pairs = (1 to n).map(_ => (load[A](buffer), Paged[A, B](load[Long](buffer))))
     InnerNode(TreeMap(pairs:_*), Paged(load[Long](buffer)))

@@ -4,17 +4,19 @@ import java.nio.ByteBuffer
 
 abstract class Node[A, B] {
   
-  implicit val keyFormat: BinaryFormat[A]
+  implicit val meta: Meta[A, B]
   
-  implicit val valueFormat: BinaryFormat[B]
+  implicit val pager = meta.pager
   
-  implicit val ordering: Ordering[A]
+  implicit val ordering = meta.ordering
   
-  implicit def ordering2order[A : Ordering](x : A) = new Ordered[A] {
+  implicit val keyFormat = meta.keyFormat
+  
+  implicit val valueFormat = meta.valueFormat
+  
+  implicit def ordered[A : Ordering](x : A) = new Ordered[A] {
     def compare(y : A) = implicitly[Ordering[A]].compare(x, y)
   }
-
-  implicit val pager: Pager
   
   def get(key: A): Option[B]
   

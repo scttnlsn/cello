@@ -11,14 +11,14 @@ abstract sealed class Swappable[A, B] {
 
 }
 
-case class Paged[A, B](val page: Long)(implicit val pager: Pager, val ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]) extends Swappable[A, B] {
+case class Paged[A, B](val page: Long)(implicit val meta: Meta[A, B]) extends Swappable[A, B] {
 
   def dump(): Long = {
     page
   }
 
   def load(): Node[A, B] = {
-    val buffer = pager.read(page)
+    val buffer = meta.pager.read(page)
     Binary.load[Byte](buffer) match {
       case Swappable.BYTE_LEAF => LeafNode(buffer)
       case Swappable.BYTE_INNER => InnerNode(buffer)
@@ -27,12 +27,12 @@ case class Paged[A, B](val page: Long)(implicit val pager: Pager, val ordering: 
 
 }
 
-case class Volatile[A, B](val node: Node[A, B])(implicit val pager: Pager, val ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]) extends Swappable[A, B] {
+case class Volatile[A, B](val node: Node[A, B])(implicit val meta: Meta[A, B]) extends Swappable[A, B] {
 
   def dump(): Long = {
     val buffer = ByteBuffer.allocate(Pager.PAGESIZE)
     node.pack(buffer)
-    pager.append(buffer)
+    meta.pager.append(buffer)
   }
 
   def load(): Node[A, B] = {

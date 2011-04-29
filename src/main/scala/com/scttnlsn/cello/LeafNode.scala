@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import scala.collection.SortedMap
 import scala.collection.immutable.TreeMap
 
-class LeafNode[A, B](var map: SortedMap[A, B])(implicit val pager: Pager, val ordering: Ordering[A], val keyFormat: BinaryFormat[A], val valueFormat: BinaryFormat[B]) extends Node[A, B] {
+class LeafNode[A, B](var map: SortedMap[A, B])(implicit val meta: Meta[A, B]) extends Node[A, B] {
   
   /**
    * Get the value for the given key.
@@ -66,21 +66,26 @@ object LeafNode {
   /**
    * Create a new node from the given map.
    */
-  def apply[A, B](map: SortedMap[A, B])(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): LeafNode[A, B] = {
+  def apply[A, B](map: SortedMap[A, B])(implicit meta: Meta[A, B]): LeafNode[A, B] = {
     new LeafNode(map)
   }
 
   /**
    * Create a new empty node.
    */
-  def apply[A, B]()(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): LeafNode[A, B] = {
+  def apply[A, B]()(implicit meta: Meta[A, B]): LeafNode[A, B] = {
+    implicit val ordering = meta.ordering
     LeafNode(TreeMap[A, B]())
   }
 
   /**
    * Create a new node from the values packed into the given byte buffer.
    */
-  def apply[A, B](buffer: ByteBuffer)(implicit pager: Pager, ordering: Ordering[A], keyFormat: BinaryFormat[A], valueFormat: BinaryFormat[B]): LeafNode[A, B] = {
+  def apply[A, B](buffer: ByteBuffer)(implicit meta: Meta[A, B]): LeafNode[A, B] = {
+    implicit val ordering = meta.ordering
+    implicit val keyFormat = meta.keyFormat
+    implicit val valueFormat = meta.valueFormat
+    
     val n = load[Int](buffer)
     val pairs = (1 to n).map(_ => (load[A](buffer), load[B](buffer)))
     LeafNode(TreeMap(pairs:_*))
