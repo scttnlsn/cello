@@ -32,4 +32,8 @@ case class Collection(path: String) {
     queue !? BulkDelete(keys)
   }
   
+  def compact(): Any = {
+      queue !? Compact()
+  }
+  
 }

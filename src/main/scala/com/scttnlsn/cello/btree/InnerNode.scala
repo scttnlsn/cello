@@ -126,5 +126,9 @@ object InnerNode {
     val pairs = (1 to n).map(_ => (load[A](buffer), Paged[A, B](load[Long](buffer))))
     InnerNode(TreeMap(pairs:_*), Paged(load[Long](buffer)))
   }
+  
+  def unapply[A, B](node: InnerNode[A, B]): Option[(ChildMap[A, B], Child[A, B])] = {
+    Some(node.map, node.last)
+  }
 
 }

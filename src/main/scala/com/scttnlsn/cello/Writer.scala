@@ -22,6 +22,13 @@ case class Writer(val pager: Pager) {
     write(tree => keys.foreach(key => tree.delete(key)))
   }
   
+  def compact(): Long = {
+    val compacted = Pager(pager.path + ".compact")
+    val page = Footer(1, snapshot.tree.copy(compacted), compacted).save()
+    pager.replace(compacted.path)
+    1
+  }
+  
   private def write(operation: Tree[String, String] => Unit): Long = {
     val tree = snapshot.tree
     val version = snapshot.version + 1

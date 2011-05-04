@@ -91,5 +91,9 @@ object LeafNode {
     val pairs = (1 to n).map(_ => (load[A](buffer), load[B](buffer)))
     LeafNode(TreeMap(pairs:_*))
   }
+  
+  def unapply[A, B](node: LeafNode[A, B]): Option[(SortedMap[A, B])] = {
+    Some(node.map)
+  }
 
 }

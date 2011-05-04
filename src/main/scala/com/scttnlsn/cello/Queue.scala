@@ -11,6 +11,8 @@ case class BulkSet(map: Map[String, String])
 
 case class BulkDelete(keys: List[String])
 
+case class Compact()
+
 class Queue(val pager: Pager) extends Actor {
   
   def act(): Unit = {
@@ -20,6 +22,7 @@ class Queue(val pager: Pager) extends Actor {
         case Delete(key) => reply(Writer(pager).delete(key))
         case BulkSet(map) => reply(Writer(pager).set(map))
         case BulkDelete(keys) => reply(Writer(pager).delete(keys))
+        case Compact() => reply(Writer(pager).compact())
       }
     }
   }
