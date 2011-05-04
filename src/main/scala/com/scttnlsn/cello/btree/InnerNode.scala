@@ -3,15 +3,14 @@ package com.scttnlsn.cello.btree
 import com.scttnlsn.cello.Binary._
 import com.scttnlsn.cello.Pager
 import java.nio.ByteBuffer
-import scala.collection.SortedMap
 import scala.collection.immutable.TreeMap
 
-class InnerNode[A, B](var map: SortedMap[A, Swappable[A, B]], var last: Swappable[A, B])(implicit val meta: Meta[A, B]) extends Node[A, B] {
+class InnerNode[A, B](var map: ChildMap[A, B], var last: Child[A, B])(implicit val meta: Meta[A, B]) extends Node[A, B] {
   
   /**
    * Find the child node responsible for the given key.
    */
-  def find(key: A): (A, Swappable[A, B]) = {
+  def find(key: A): (A, Child[A, B]) = {
     if (key > map.lastKey) {
       (null.asInstanceOf[A], last)
     } else {
@@ -103,7 +102,7 @@ object InnerNode {
   /**
    * Create a new node from the given keys/children.
    */
-  def apply[A, B](map: SortedMap[A, Swappable[A, B]], last: Swappable[A, B])(implicit meta: Meta[A, B]): InnerNode[A, B] = {
+  def apply[A, B](map: ChildMap[A, B], last: Child[A, B])(implicit meta: Meta[A, B]): InnerNode[A, B] = {
     new InnerNode(map, last)
   }
 
